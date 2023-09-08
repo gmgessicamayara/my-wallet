@@ -3,15 +3,13 @@ import Content from "../Content";
 import MainHeader from "../MainHeader";
 import { Grid } from "./style";
 
- 
-
 const Layout: React.FC = () => {
-    return (
-        <Grid>
-              <MainHeader/>
-              <Aside/>
-              <Content/>
-        </Grid>
-    );
-}
+  return (
+    <Grid>
+      <MainHeader />
+      <Aside />
+      <Content />
+    </Grid>
+  );
+};
 export default Layout;
