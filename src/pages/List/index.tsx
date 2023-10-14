@@ -10,7 +10,7 @@ import expenses from "../../repositories/expenses";
 
 import formatCurrency from "../../utils/formatCurrency";
 import formatDate from "../../utils/formatDate";
-import listOfMonths from '../../utils/months';
+import listOfMonths from "../../utils/months";
 import uuid from "react-uuid";
 
 interface IData {
@@ -23,68 +23,74 @@ interface IData {
 }
 const List: React.FC = () => {
   const [data, setData] = useState<IData[]>([]);
-  const [monthSelected, setMonthSelected] = useState<string>(
-    String(new Date().getMonth() + 1)
-  );
-  const [yearSelected, setYearSelected] = useState<string>(
-    String(new Date().getFullYear())
-  );
+  const [monthSelected, setMonthSelected] = useState<number>(new Date().getMonth() + 1);
+  const [yearSelected, setYearSelected] = useState<number>(new Date().getFullYear());
+
+  const [selectedFrequency, setSelectedFrequency] = useState<string[]>([
+    "recorrente",
+  ]);
 
   const { type } = useParams();
-  const pageData =
-    type === "entry-balance"
-      ? {
-          title: "Entry Balance",
-          lineColor: "#F79318",
-        }
-      : {
-          title: "Exit Balance",
-          lineColor: "#E44C4E",
-        };
 
-
-  const listData = useMemo(() => {
-    return type === "entry-balance" ? gains : expenses;
+  const pageData = useMemo(() => {
+    return type === "entry-balance"
+      ? { title: "Entry Balance", lineColor: "#4E41F0", listData: gains }
+      : { title: "Exit Balance", lineColor: "#e44c45", listData: expenses };
   }, [type]);
-
 
   const years = useMemo(() => {
     let uniqueYears: number[] = [];
 
-   listData.forEach(item => {
-        const date = new Date(item.date);
-        const year = date.getFullYear();
+    pageData.listData.forEach((item) => {
+      const date = new Date(item.date);
+      const year = date.getFullYear();
 
-        if(!uniqueYears.includes(year)){
-            uniqueYears.push(year);
-        }
+      if (!uniqueYears.includes(year)) {
+        uniqueYears.push(year);
+      }
     });
 
-    return uniqueYears.map(year => {
-        return {
-            value: year,
-            label: year
-        }
-    })
-},[listData])
-
-const months = useMemo(() => {
-  return listOfMonths.map((month, index) => {
+    return uniqueYears.map((year) => {
       return {
-          value: index + 1,
-          label: month
-      } 
-  });
-},[]);
+        value: year,
+        label: year
+      };
+    });
+  }, [pageData.listData]);
 
+  const months = useMemo(() => {
+    return listOfMonths.map((month, index) => {
+      return {
+        value: index + 1,
+        label: month
+      };
+    });
+  }, []);
+
+  const handleFrequencyClick = (frenquency: string) => {
+    const alredySelectted = selectedFrequency.findIndex(
+      (item) => item === frenquency
+    );
+
+    if (alredySelectted >= 0) {
+      const filtered = selectedFrequency.filter((item) => item != frenquency);
+      setSelectedFrequency(filtered);
+    } else {
+      setSelectedFrequency((prev) => [...prev, frenquency]);
+    }
+  };
 
   useEffect(() => {
-    const filteredDate = listData.filter((item) => {
+    const filteredDate = pageData.listData.filter((item) => {
       const date = new Date(item.date);
-      const month = String(date.getMonth() + 1);
-      const year = String(date.getFullYear());
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
 
-      return month === monthSelected && year === yearSelected;
+      return (
+        month === monthSelected &&
+        year === yearSelected &&
+        selectedFrequency.includes(item.frequency)
+      );
     });
 
     const formattedDate = filteredDate.map((item) => {
@@ -98,28 +104,62 @@ const months = useMemo(() => {
       };
     });
     setData(formattedDate);
-  }, [listData, monthSelected, yearSelected, data.length]);
+  }, [
+    pageData.listData,
+    monthSelected,
+    yearSelected,
+    data.length,
+    selectedFrequency,
+  ]);
+
+  const handleMonthSelected = (month: string) =>{
+    try{
+        const parseMonth = Number(month);
+        setMonthSelected(parseMonth);
+    }catch(error){
+        throw new Error('invalid month value. Is accept 0 - 12')
+    }
+}
+
+const handleYearSelected = (year: string) =>{
+    try{
+        const parseYear = Number(year);
+        setYearSelected(parseYear);
+    }catch(error){
+        throw new Error('invalid year value')
+    }
+}
 
   return (
     <Container>
       <ContentHeader title={pageData.title} lineColor={pageData.lineColor}>
         <SelectInput
           options={months}
-          onChange={(e) => setMonthSelected(e.target.value)}
+          onChange={(e) => handleMonthSelected(e.target.value)}
           defaultValue={monthSelected}
         />
         <SelectInput
           options={years}
-          onChange={(e) => setYearSelected(e.target.value)}
+          onChange={(e) =>  handleYearSelected(e.target.value)}
           defaultValue={yearSelected}
         />
       </ContentHeader>
 
       <Filters>
-        <button type="button" className="tag-filter tag-filter-recurrent">
+        <button
+          type="button"
+          className={`tag-filter tag-filter-recurrent 
+          ${selectedFrequency.includes("recorrente") && "tag-actived"}`}
+          onClick={() => handleFrequencyClick("recorrente")}
+        >
           Recurrents
         </button>
-        <button type="button" className="tag-filter tag-filter-eventual">
+        <button
+          type="button"
+          className={`tag-filter tag-filter-eventual
+          ${selectedFrequency.includes("eventual") && "tag-actived"}`}
+          onClick={() => handleFrequencyClick("eventual")}
+        >
           Eventual
         </button>
       </Filters>
